@@ -1,0 +1,24 @@
+# dependencies
+node_modules/
+*/node_modules/
+
+# secrets & local config — never commit these
+.env
+*/.env
+.env.local
+
+# build output
+dist/
+build/
+
+# logs
+*.log
+npm-debug.log*
+
+# editor / OS
+.DS_Store
+.vscode/
+.idea/
+
+# mongodb-memory-server cached binaries (dev fallback)
+.cache/
