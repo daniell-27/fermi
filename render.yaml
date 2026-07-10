@@ -1,0 +1,20 @@
+# Render Blueprint. In Render: New + → Blueprint → connect this repo.
+# Render reads this file, provisions the service, and asks you to fill in the
+# secret env vars (ANTHROPIC_API_KEY, MONGODB_URI) before the first deploy.
+services:
+  - type: web
+    name: fermi
+    runtime: node
+    plan: free
+    buildCommand: npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true # Render generates a strong random secret
+      - key: ANTHROPIC_API_KEY
+        sync: false # set in the Render dashboard (secret)
+      - key: MONGODB_URI
+        sync: false # your MongoDB Atlas connection string (secret)
