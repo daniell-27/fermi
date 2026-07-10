@@ -4,7 +4,7 @@
   "private": true,
   "description": "Fermi — MERN scenario-valuation app (root build/start for deployment).",
   "scripts": {
-    "build": "npm --prefix client install && npm --prefix client run build && npm --prefix server install --omit=dev",
+    "build": "npm --prefix client install --include=dev && npm --prefix client run build && npm --prefix server install --omit=dev",
     "start": "npm --prefix server start"
   }
 }
