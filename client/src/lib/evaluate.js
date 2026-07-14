@@ -6,16 +6,32 @@
 // formula defines one of the main formula's input blocks in terms of other
 // (leaf) blocks. "Free" inputs are the leaf blocks the user/AI actually supply.
 
-const PRECEDENCE = { "+": 1, "-": 1, "*": 2, "/": 2 };
-const OP_SYM = { "*": "×", "/": "÷", "+": "+", "-": "−", "(": "(", ")": ")" };
+const PRECEDENCE = { "+": 1, "-": 1, "*": 2, "/": 2, "%": 2, "^": 3 };
+const RIGHT_ASSOC = { "^": true };
+const OP_SYM = { "*": "×", "/": "÷", "+": "+", "-": "−", "^": "^", "%": "%", "(": "(", ")": ")" };
+
+// Supported unary functions. (MIN/MAX need multiple args — a later addition.)
+export const FUNCTIONS = {
+  SQRT: (x) => Math.sqrt(x),
+  LN: (x) => Math.log(x),
+  LOG: (x) => Math.log10(x),
+  EXP: (x) => Math.exp(x),
+  ABS: (x) => Math.abs(x),
+  ROUND: (x) => Math.round(x),
+};
 
 const nameOf = (id, blocks) => blocks.find((b) => b.id === id)?.name ?? "?";
 
+function tokenText(t, blocks) {
+  if (t.type === "variable") return nameOf(t.blockId, blocks);
+  if (t.type === "const") return String(t.value);
+  if (t.type === "func") return t.name;
+  return OP_SYM[t.op] || t.op;
+}
+
 // A single formula's right-hand side as text, e.g. "Free Cash Flow × Future Multiple".
 export function rhsToText(rhs, blocks) {
-  return (rhs || [])
-    .map((t) => (t.type === "variable" ? nameOf(t.blockId, blocks) : OP_SYM[t.op] || t.op))
-    .join(" ");
+  return (rhs || []).map((t) => tokenText(t, blocks)).join(" ");
 }
 
 // The main formula as "Output = expression".
@@ -62,28 +78,35 @@ export function freeInputIds(model) {
 export const inputVariableIds = (formula) =>
   freeInputIds({ formula, auxFormulas: [] });
 
-// Shunting-yard: token list -> RPN. null if malformed.
+// Shunting-yard: token list -> RPN. null if malformed. Handles variables,
+// constants, unary functions, parentheses, and the binary operators.
 function toRPN(tokens) {
   const output = [];
   const ops = [];
+  const top = () => ops[ops.length - 1];
   for (const t of tokens) {
-    if (t.type === "variable") {
+    if (t.type === "variable" || t.type === "const") {
       output.push(t);
+    } else if (t.type === "func") {
+      ops.push(t);
     } else if (t.op === "(") {
       ops.push(t);
     } else if (t.op === ")") {
       let found = false;
       while (ops.length) {
-        const top = ops.pop();
-        if (top.op === "(") { found = true; break; }
-        output.push(top);
+        const o = ops.pop();
+        if (o.op === "(") { found = true; break; }
+        output.push(o);
       }
       if (!found) return null;
+      if (top() && top().type === "func") output.push(ops.pop());
     } else {
+      // binary operator
       while (
-        ops.length &&
-        ops[ops.length - 1].op !== "(" &&
-        PRECEDENCE[ops[ops.length - 1].op] >= PRECEDENCE[t.op]
+        ops.length && top().op !== "(" &&
+        (top().type === "func" ||
+          PRECEDENCE[top().op] > PRECEDENCE[t.op] ||
+          (PRECEDENCE[top().op] === PRECEDENCE[t.op] && !RIGHT_ASSOC[t.op]))
       ) {
         output.push(ops.pop());
       }
@@ -91,9 +114,9 @@ function toRPN(tokens) {
     }
   }
   while (ops.length) {
-    const top = ops.pop();
-    if (top.op === "(") return null;
-    output.push(top);
+    const o = ops.pop();
+    if (o.op === "(") return null;
+    output.push(o);
   }
   return output;
 }
@@ -107,13 +130,22 @@ export function evaluateFormula(formula, values) {
 
   const stack = [];
   for (const t of rpn) {
-    if (t.type === "variable") {
+    if (t.type === "const") {
+      stack.push(Number(t.value));
+    } else if (t.type === "variable") {
       const raw = values[t.blockId];
       const n = typeof raw === "number" ? raw : parseFloat(raw);
       if (raw === undefined || raw === null || raw === "" || Number.isNaN(n)) {
         return { value: null, error: "Missing input" };
       }
       stack.push(n);
+    } else if (t.type === "func") {
+      const fn = FUNCTIONS[t.name];
+      const a = stack.pop();
+      if (!fn || a === undefined) return { value: null, error: "Malformed formula" };
+      const r = fn(a);
+      if (Number.isNaN(r) || !Number.isFinite(r)) return { value: null, error: `${t.name} is undefined here` };
+      stack.push(r);
     } else {
       const b = stack.pop();
       const a = stack.pop();
@@ -125,6 +157,11 @@ export function evaluateFormula(formula, values) {
         case "/":
           if (b === 0) return { value: null, error: "Division by zero" };
           stack.push(a / b);
+          break;
+        case "^": stack.push(Math.pow(a, b)); break;
+        case "%":
+          if (b === 0) return { value: null, error: "Modulo by zero" };
+          stack.push(a % b);
           break;
         default: return { value: null, error: "Unknown operator" };
       }
