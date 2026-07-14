@@ -41,6 +41,14 @@ export const getFeedback = (payload) =>
 export const searchCompanies = (q) => req(`/api/finance/search?q=${encodeURIComponent(q)}`);
 export const getMetrics = (symbol) => req(`/api/finance/metrics?symbol=${encodeURIComponent(symbol)}`);
 
+// ---- Fintwit + article ingestion ----
+export const getFintwit = (symbol, company) =>
+  req(`/api/fintwit?symbol=${encodeURIComponent(symbol || "")}&company=${encodeURIComponent(company || "")}`);
+export const getFintwitScenario = (payload) =>
+  req("/api/fintwit/scenario", { method: "POST", body: JSON.stringify(payload) });
+export const ingestArticle = (payload) =>
+  req("/api/ingest/article", { method: "POST", body: JSON.stringify(payload) });
+
 export async function checkHealth() {
   try {
     return await req("/api/health");

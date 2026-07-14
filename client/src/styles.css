@@ -164,6 +164,21 @@ body {
 
 /* ---------- Median + scenarios ---------- */
 .median-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+/* ---------- Scenario sources (Fintwit + article) ---------- */
+.scenario-sources { margin-bottom: 12px; }
+.sources-row { display: flex; gap: 10px; align-items: center; }
+.fintwit { position: relative; }
+.fintwit-dropdown {
+  position: absolute; z-index: 30; top: calc(100% + 4px); left: 0; min-width: 240px;
+  background: #fffdf5; border: 1px solid var(--line); border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(60,45,20,0.25); padding: 6px;
+}
+.fintwit-option { display: flex; align-items: center; gap: 8px; padding: 7px 8px; font-size: 14px; cursor: pointer; border-radius: 4px; }
+.fintwit-option:hover { background: var(--paper-2); }
+.fintwit-handle { color: var(--accent); font-weight: 600; }
+.fintwit-loading { color: var(--ink-soft); }
+.article-msg { margin-top: 8px; font-size: 13px; color: #822d1f; font-style: italic; }
+
 .scenario-rows { display: flex; flex-direction: column; gap: 12px; }
 .scenario-row { border: 1px solid var(--line); border-radius: 7px; padding: 10px; background: var(--paper-2); }
 .scenario-row-top { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }

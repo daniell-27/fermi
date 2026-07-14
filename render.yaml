@@ -20,3 +20,5 @@ services:
         sync: false # your MongoDB Atlas connection string (secret)
       - key: FMP_API_KEY
         sync: false # Financial Modeling Prep key for company search + metrics (secret)
+      - key: X_BEARER_TOKEN
+        sync: false # X/Twitter API bearer token for the Fintwit feature (secret, optional)

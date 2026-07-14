@@ -5,6 +5,7 @@ import OutputView from "./components/OutputView.jsx";
 import AuthScreen from "./components/AuthScreen.jsx";
 import CompanySearch from "./components/CompanySearch.jsx";
 import MetricPicker from "./components/MetricPicker.jsx";
+import ScenarioSources from "./components/ScenarioSources.jsx";
 import { makeDefaultModel } from "./lib/defaults.js";
 import { freeInputIds, modelToText, toRaw, UNITS } from "./lib/evaluate.js";
 import { uid } from "./lib/util.js";
@@ -128,6 +129,12 @@ export default function App() {
   }
   const updateScenario = (id, patch) => setScenarios(scenarios.map((s) => (s.id === id ? { ...s, ...patch } : s)));
   const removeScenario = (id) => setScenarios(scenarios.filter((s) => s.id !== id));
+
+  // Scenarios added from Fintwit / uploaded articles.
+  const addScenarioFromSource = (sc) =>
+    setScenarios((s) => [...s, { id: uid(), name: sc.name, description: sc.description, source: sc.source, handle: sc.handle }]);
+  const removeScenarioByHandle = (handle) => setScenarios((s) => s.filter((x) => x.handle !== handle));
+  const addedHandles = new Set(scenarios.filter((s) => s.handle).map((s) => s.handle));
 
   // run
   async function onRun() {
@@ -331,6 +338,13 @@ export default function App() {
 
             <div className="card">
               <div className="card-title">Alternative scenarios</div>
+              <ScenarioSources
+                health={health}
+                context={{ company: model.company, ticker: model.ticker, thesis: model.thesis, formulaText: modelToText(model) }}
+                addedHandles={addedHandles}
+                onAddScenario={addScenarioFromSource}
+                onRemoveByHandle={removeScenarioByHandle}
+              />
               <div className="scenario-rows">
                 {scenarios.map((s, i) => (
                   <div key={s.id} className="scenario-row">

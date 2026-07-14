@@ -10,6 +10,8 @@ import dataRoutes from "./routes/data.js";
 import scenarioRoutes, { runtimeInfo } from "./routes/scenario.js";
 import feedbackRoutes from "./routes/feedback.js";
 import financeRoutes, { financeEnabled } from "./routes/finance.js";
+import ingestRoutes from "./routes/ingest.js";
+import fintwitRoutes, { fintwitEnabled } from "./routes/fintwit.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -20,11 +22,14 @@ const PORT = process.env.PORT || 5001;
 if (process.env.NODE_ENV !== "production") {
   app.use(cors({ origin: [/^http:\/\/localhost:\d+$/], credentials: true }));
 }
+// Article uploads (base64 PDF) need a bigger body; mount before the global 1mb
+// parser so only this route gets the larger limit.
+app.use("/api/ingest", express.json({ limit: "25mb" }));
 app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
 
 app.get("/api/health", (_req, res) => {
-  res.json({ ok: true, ...runtimeInfo, finance: financeEnabled });
+  res.json({ ok: true, ...runtimeInfo, finance: financeEnabled, fintwit: fintwitEnabled });
 });
 
 app.use("/api/auth", authRoutes);
@@ -32,6 +37,8 @@ app.use("/api", dataRoutes); // /api/models, /api/runs (auth-gated)
 app.use("/api", scenarioRoutes); // /api/run (auth-gated)
 app.use("/api", feedbackRoutes); // /api/feedback (auth-gated)
 app.use("/api", financeRoutes); // /api/finance/* (auth-gated)
+app.use("/api", ingestRoutes); // /api/ingest/article (auth-gated)
+app.use("/api", fintwitRoutes); // /api/fintwit* (auth-gated)
 
 // In production, serve the built React client from the same origin so the
 // auth cookie is first-party and there is no CORS to configure.
