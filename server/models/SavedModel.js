@@ -11,6 +11,8 @@ const savedModelSchema = new mongoose.Schema(
     thesis: { type: String, default: "" },
     blocks: { type: mongoose.Schema.Types.Mixed, default: [] },
     formula: { type: mongoose.Schema.Types.Mixed, default: {} },
+    auxFormulas: { type: mongoose.Schema.Types.Mixed, default: [] },
+    units: { type: mongoose.Schema.Types.Mixed, default: {} },
   },
   { timestamps: true }
 );

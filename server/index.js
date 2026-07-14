@@ -15,7 +15,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-app.use(cors({ origin: true, credentials: true }));
+// Production serves the client from the same origin, so no CORS is needed.
+// In dev the Vite proxy is also same-origin, but allow localhost for flexibility.
+if (process.env.NODE_ENV !== "production") {
+  app.use(cors({ origin: [/^http:\/\/localhost:\d+$/], credentials: true }));
+}
 app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
 
@@ -36,6 +40,13 @@ if (process.env.NODE_ENV === "production") {
   app.use(express.static(clientDist));
   app.get("*", (_req, res) => res.sendFile(path.join(clientDist, "index.html")));
 }
+
+// Catch-all error handler so an uncaught route error returns JSON, never hangs.
+app.use((err, _req, res, _next) => {
+  console.error("Unhandled error:", err?.message);
+  if (res.headersSent) return;
+  res.status(500).json({ error: "Something went wrong." });
+});
 
 connectDB()
   .then(() => {

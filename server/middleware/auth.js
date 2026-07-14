@@ -1,7 +1,13 @@
 import jwt from "jsonwebtoken";
 
-export const JWT_SECRET = process.env.JWT_SECRET || "dev-insecure-secret-change-me";
+const DEFAULT_DEV_SECRET = "dev-insecure-secret-change-me";
+export const JWT_SECRET = process.env.JWT_SECRET || DEFAULT_DEV_SECRET;
 const COOKIE = "fermi_token";
+
+// Never run production with the insecure default (tokens would be forgeable).
+if (process.env.NODE_ENV === "production" && (!process.env.JWT_SECRET || JWT_SECRET === DEFAULT_DEV_SECRET)) {
+  throw new Error("JWT_SECRET must be set to a strong random value in production.");
+}
 
 export function issueToken(res, user) {
   const token = jwt.sign({ uid: user.id || user._id }, JWT_SECRET, { expiresIn: "30d" });
