@@ -10,6 +10,11 @@ estimate carries a sticky-note justification, and you can tweak any input to see
 its scenario recalculate live. Each analyst has their own account; saved models and
 run history are stored per user.
 
+## Architecture
+
+See [docs/sequence-diagram.md](docs/sequence-diagram.md) for the up-to-date
+UML-style sequence diagram of the full input → run → output flow.
+
 ## Stack (MERN)
 
 - **MongoDB** — users, saved models, and run history (Mongoose).
