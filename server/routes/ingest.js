@@ -30,6 +30,41 @@ ${p.thesis ? `Their thesis: ${p.thesis}\n` : ""}
 Read the attached article. If it contains substantive information relevant to THIS company and thesis, extract the single alternative future scenario it implies (how conditions would differ from the analyst's base case) as a short name + a 2-4 sentence description the analyst could hand to a valuation model. If the article is off-topic, about a different company, or too thin to imply a scenario, mark it not relevant and say why. Call submit_article_scenario exactly once.`;
 }
 
+// Extract a compact, factual context brief from an uploaded PDF, to be fed into
+// the scenario run as additional grounding (not turned into a scenario).
+router.post("/ingest/context", requireAuth, async (req, res) => {
+  try {
+    const { dataBase64, name, company, ticker } = req.body || {};
+    if (MOCK) {
+      return res.json({
+        title: name || "document.pdf",
+        text: `Demo context extracted from ${name || "the document"}: key figures and claims relevant to ${company || "the company"} would be summarized here. (Add an ANTHROPIC_API_KEY for real extraction.)`,
+      });
+    }
+    if (!anthropic) return res.status(400).json({ error: "No Anthropic API key configured (or set MOCK=1)." });
+    if (!dataBase64) return res.status(400).json({ error: "No file provided." });
+
+    const instruction = `Extract a tight, factual brief from the attached document to help value ${company || "a company"}${ticker ? ` (${ticker})` : ""}. Pull concrete figures, guidance, dates, risks, and claims relevant to the valuation. Use short bullet points with the figure and its period/source where stated. Do not add outside information or opinions; if the document is off-topic, say so in one line.`;
+    const message = await anthropic.messages.create({
+      model: MODEL,
+      max_tokens: 1200,
+      messages: [{
+        role: "user",
+        content: [
+          { type: "document", source: { type: "base64", media_type: "application/pdf", data: dataBase64 } },
+          { type: "text", text: instruction },
+        ],
+      }],
+    });
+    const text = message.content.filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
+    if (!text) return res.status(502).json({ error: "Could not read the document." });
+    res.json({ title: name || "document.pdf", text });
+  } catch (err) {
+    console.error("Context ingest failed:", err);
+    res.status(err?.status || 500).json({ error: err?.message || "Document analysis failed." });
+  }
+});
+
 router.post("/ingest/article", requireAuth, async (req, res) => {
   try {
     const { dataBase64 } = req.body || {};

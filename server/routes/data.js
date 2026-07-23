@@ -25,12 +25,12 @@ router.get("/models", wrap(async (req, res) => {
 
 router.post("/models", wrap(async (req, res) => {
   const b = req.body || {};
-  const { id, name, company, ticker, thesis, variables, blocks, folders, formula, auxFormulas, units, inputOrder, baseValues, scenarios, schemaVersion } = b;
+  const { id, name, company, ticker, thesis, variables, blocks, folders, formula, auxFormulas, units, inputOrder, baseValues, scenarios, contextDocs, schemaVersion } = b;
   // Full-page snapshot; accept legacy `blocks` as a fallback for `variables`.
   const fields = {
     name, company, ticker, thesis,
     variables: variables ?? blocks ?? [],
-    folders, formula, auxFormulas, units, inputOrder, baseValues, scenarios, schemaVersion,
+    folders, formula, auxFormulas, units, inputOrder, baseValues, scenarios, contextDocs, schemaVersion,
   };
   // Don't overwrite stored values with undefined when a field is omitted.
   for (const k of Object.keys(fields)) if (fields[k] === undefined) delete fields[k];

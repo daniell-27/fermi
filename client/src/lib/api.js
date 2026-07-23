@@ -48,6 +48,8 @@ export const getFintwitScenario = (payload) =>
   req("/api/fintwit/scenario", { method: "POST", body: JSON.stringify(payload) });
 export const ingestArticle = (payload) =>
   req("/api/ingest/article", { method: "POST", body: JSON.stringify(payload) });
+export const ingestContext = (payload) =>
+  req("/api/ingest/context", { method: "POST", body: JSON.stringify(payload) });
 
 export async function checkHealth() {
   try {

@@ -21,6 +21,7 @@ const savedModelSchema = new mongoose.Schema(
     inputOrder: { type: mongoose.Schema.Types.Mixed, default: [] },
     baseValues: { type: mongoose.Schema.Types.Mixed, default: {} },
     scenarios: { type: mongoose.Schema.Types.Mixed, default: [] },
+    contextDocs: { type: mongoose.Schema.Types.Mixed, default: [] },
     schemaVersion: { type: Number, default: 1 },
   },
   { timestamps: true }

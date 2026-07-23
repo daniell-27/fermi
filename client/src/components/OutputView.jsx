@@ -152,6 +152,26 @@ export default function OutputView({ model, baseValues, setBaseValues, result, s
           </tbody>
         </table>
       </div>
+
+      {result.sources?.length > 0 && (
+        <div className="card sources-card">
+          <div className="card-title">Sources <span className="optional">(cited as [S#] in the reasoning notes)</span></div>
+          <ul className="sources-list">
+            {result.sources.map((s) => (
+              <li key={s.tag}>
+                <span className="src-tag">[{s.tag}]</span>
+                {s.url ? (
+                  <a className="src-link" href={s.url} target="_blank" rel="noopener noreferrer">{s.title}</a>
+                ) : (
+                  <span className="src-title">{s.title}</span>
+                )}
+                <span className={"src-type src-type-" + s.type}>{s.type}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="hint">Edit any estimate to see its scenario's output recalculate. The note icon opens the model's reasoning.</div>
     </div>
   );

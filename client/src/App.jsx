@@ -6,6 +6,7 @@ import AuthScreen from "./components/AuthScreen.jsx";
 import CompanySearch from "./components/CompanySearch.jsx";
 import MetricPicker from "./components/MetricPicker.jsx";
 import ScenarioSources from "./components/ScenarioSources.jsx";
+import ContextDocs from "./components/ContextDocs.jsx";
 import { makeDefaultModel } from "./lib/defaults.js";
 import { migrateModel } from "./lib/migrate.js";
 import { freeInputIds, modelToText, toRaw, UNITS } from "./lib/evaluate.js";
@@ -25,10 +26,11 @@ const defaultScenarios = () => [
 
 // Signature of everything a run depends on — used to tell whether the inputs
 // have changed since the last run (drives the Re-run button state).
-const sigOf = (m, bv, sc) =>
+const sigOf = (m, bv, sc, cd) =>
   JSON.stringify({
     f: m.formula, v: m.variables, a: m.auxFormulas, u: m.units, t: m.thesis,
     b: bv, s: (sc || []).map((s) => ({ n: s.name, d: s.description })),
+    c: (cd || []).filter((d) => d.status === "done").map((d) => ({ n: d.name, l: (d.text || "").length })),
   });
 
 // Display order for median inputs: honor inputOrder, then any new inputs.
@@ -46,6 +48,7 @@ export default function App() {
   const [model, setModel] = useState(makeDefaultModel);
   const [baseValues, setBaseValues] = useState({});
   const [scenarios, setScenarios] = useState(defaultScenarios);
+  const [contextDocs, setContextDocs] = useState([]); // uploaded PDF context
 
   const [view, setView] = useState("build"); // "build" | "output"
   const [result, setResult] = useState(null);
@@ -71,7 +74,7 @@ export default function App() {
 
   // Have the inputs changed since the last run? Drives the Re-run button colour
   // and the "view stale output?" confirmation.
-  const inputSig = sigOf(model, baseValues, scenarios);
+  const inputSig = sigOf(model, baseValues, scenarios, contextDocs);
   const inputsDirty = !!result && runSig !== null && inputSig !== runSig;
 
   // ---- initial auth check ----
@@ -97,6 +100,7 @@ export default function App() {
         setModel(withDefaults(d.model));
         setBaseValues(d.baseValues || {});
         setScenarios(d.scenarios?.length ? d.scenarios : defaultScenarios());
+        setContextDocs(d.contextDocs || []);
         setResult(d.result || null);
         setActiveRunId(d.activeRunId || null);
         setRunSig(d.runSig ?? null);
@@ -113,12 +117,12 @@ export default function App() {
       try {
         localStorage.setItem(
           DRAFT_KEY(user.id),
-          JSON.stringify({ model, baseValues, scenarios, view, result, activeRunId, runSig, savedAt: Date.now() })
+          JSON.stringify({ model, baseValues, scenarios, contextDocs, view, result, activeRunId, runSig, savedAt: Date.now() })
         );
       } catch { /* quota / disabled — ignore */ }
     }, 400);
     return () => clearTimeout(t);
-  }, [user, model, baseValues, scenarios, view, result, activeRunId, runSig]);
+  }, [user, model, baseValues, scenarios, contextDocs, view, result, activeRunId, runSig]);
 
   // ---- detect a new deployment; offer a non-disruptive reload ----
   useEffect(() => {
@@ -161,6 +165,7 @@ export default function App() {
     setModel(makeDefaultModel());
     setBaseValues({});
     setScenarios(defaultScenarios());
+    setContextDocs([]);
     setResult(null);
     setActiveRunId(null);
     setRunSig(null);
@@ -180,7 +185,7 @@ export default function App() {
         variables: model.variables, folders: model.folders,
         formula: model.formula, auxFormulas: model.auxFormulas,
         units: model.units, inputOrder: model.inputOrder,
-        baseValues, scenarios,
+        baseValues, scenarios, contextDocs,
         schemaVersion: model.schemaVersion,
       });
       setModel((m) => ({ ...m, id: rec.id }));
@@ -208,6 +213,7 @@ export default function App() {
     }));
     if (m.baseValues) setBaseValues(m.baseValues);
     if (m.scenarios?.length) setScenarios(m.scenarios.map((s) => ({ id: s.id || uid(), ...s })));
+    setContextDocs(Array.isArray(m.contextDocs) ? m.contextDocs : []);
     setResult(null);
     setRunSig(null);
     setView("build");
@@ -259,6 +265,7 @@ export default function App() {
         variables: ids.map((id) => ({ id, name: nameFor(id) })),
         baseValues: toRaw(baseValues, units, ids), // send true magnitudes
         scenarios: named.map((s) => ({ name: s.name.trim() || "Unnamed scenario", description: s.description })),
+        contextDocs: contextDocs.filter((d) => d.status === "done" && d.text).map((d) => ({ name: d.name, text: d.text })),
       });
       // The model reasons in raw numbers; convert back into each variable's unit for display.
       const outScenarios = data.scenarios.map((s, i) => {
@@ -271,9 +278,9 @@ export default function App() {
         }
         return { name: s.name, values, notes: s.notes, description: named[i]?.description || "" };
       });
-      const runResult = { scenarios: outScenarios };
+      const runResult = { scenarios: outScenarios, sources: data.sources || [] };
       setResult(runResult);
-      setRunSig(sigOf(model, baseValues, scenarios)); // snapshot inputs at run time
+      setRunSig(sigOf(model, baseValues, scenarios, contextDocs)); // snapshot inputs at run time
 
       const rec = await api.saveRun({
         modelName: model.name, company: model.company, ticker: model.ticker,
@@ -309,9 +316,10 @@ export default function App() {
     setModel(m);
     setBaseValues(bv);
     setScenarios(sc.length ? sc : defaultScenarios());
+    setContextDocs([]); // run history doesn't restore the source PDFs
     setResult(run.result);
     setActiveRunId(run.id);
-    setRunSig(sigOf(m, bv, sc)); // a freshly loaded run is "clean"
+    setRunSig(sigOf(m, bv, sc, [])); // a freshly loaded run is "clean"
     setView("output");
   }
   async function onDeleteRun(id) {
@@ -508,6 +516,12 @@ export default function App() {
                 ))}
               </div>
             </div>
+
+            <ContextDocs
+              context={{ company: model.company, ticker: model.ticker, thesis: model.thesis }}
+              docs={contextDocs}
+              setDocs={setContextDocs}
+            />
 
             {error && <div className="banner banner-error">{error}</div>}
 

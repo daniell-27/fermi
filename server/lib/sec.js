@@ -204,9 +204,10 @@ export async function earningsReleases(symbol, n = 2, maxCharsEach = 3500) {
         const htmls = items.filter((it) => /\.htm[l]?$/i.test(it.name) && !/index/i.test(it.name));
         const doc = ex || htmls.sort((a, b) => (Number(b.size) || 0) - (Number(a.size) || 0))[0];
         if (!doc) continue;
-        const html = await secText(`https://www.sec.gov/Archives/edgar/data/${id.cik}/${accNo}/${doc.name}`);
+        const url = `https://www.sec.gov/Archives/edgar/data/${id.cik}/${accNo}/${doc.name}`;
+        const html = await secText(url);
         const text = stripHtml(html).slice(0, maxCharsEach);
-        if (text.length > 200) out.push({ date: c.date, text });
+        if (text.length > 200) out.push({ date: c.date, text, url });
       } catch {
         /* skip this filing */
       }

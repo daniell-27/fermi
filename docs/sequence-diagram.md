@@ -8,7 +8,7 @@ there. GitHub renders the Mermaid block below inline.
 > finance, Fintwit, or output flow changes, update this diagram in the same
 > commit.
 
-_Last updated: 2026-07-23 (rev 2 — versioning/draft, save-everything, output/re-run buttons)_
+_Last updated: 2026-07-23 (rev 3 — context PDFs, source citations)_
 
 ```mermaid
 sequenceDiagram
@@ -58,25 +58,35 @@ sequenceDiagram
         end
         API-->>FE: influencers grouped by author
     end
+    opt Upload context PDFs (multiple)
+        U->>FE: drop/select PDFs
+        loop each file (row with loading bar)
+            FE->>API: POST /api/ingest/context (base64 PDF)
+            API->>AI: extract factual brief (PDF document block)
+            AI-->>API: text
+            API-->>FE: { title, text } — attached as grounding
+        end
+    end
     U->>FE: Click Run
 
     Note over U,DB: 2 — RUN, grounded scenario reasoning (POST /api/run)
     FE->>API: POST /api/run {company, ticker, thesis, formula, variables, scenarios}
-    opt Best-effort grounding
+    opt Best-effort grounding (each source gets an [S#] tag)
         API->>DB: RAG retrieve (Peter Lynch principles)
-        DB-->>API: passages
+        DB-->>API: passages (book titles)
         API->>AI: web_search tool (credible-domain allowlist)
-        AI-->>API: current-facts brief
+        AI-->>API: current-facts brief + result URLs
         API->>SEC: last 2 quarterly earnings press releases (8-K EX-99.1)
-        SEC-->>API: release text (read skeptically, discount mgmt optimism)
+        SEC-->>API: release text + filing URL (read skeptically)
+        Note over API: also folds in analyst-uploaded context docs, then builds a numbered source list
     end
-    API->>AI: messages.create (tool_choice = submit_scenarios)
-    AI-->>API: structured value + justification, per variable per scenario
+    API->>AI: messages.create (Opus 4.8, tool_choice = submit_scenarios)
+    AI-->>API: value + justification per variable, each citing [S#]
     API->>DB: upsert Run
-    API-->>FE: scenarios [{name, values, notes}]
+    API-->>FE: scenarios [{name, values, notes}] + sources [{tag, title, url, type}]
 
     Note over U,DB: 3 — OUTPUT and POST-OUTPUT
-    FE->>FE: set result + runSig (input snapshot), view = output, render OutputView
+    FE->>FE: set result + runSig (input snapshot), view = output, render OutputView (dot plot, grid, hyperlinked Sources list)
     Note over FE: After the first run the inputs page shows Re-run and Output. Output re-opens the result with no re-run (no cost). Re-run goes green only when inputs changed since runSig. Opening Output while dirty asks to confirm.
     opt Edit a cell (median base or scenario input)
         U->>FE: change value
@@ -114,4 +124,6 @@ sequenceDiagram
 - **Recalculation** on cell edits is local (`resolveTyped`) — no API round-trip.
 - **Schema versioning** — every saved model/run carries `schemaVersion`; `migrateModel` upgrades old data on load (e.g. `blocks`→`variables`), so a patched bug can't re-enter through a stale saved model.
 - **Draft + deploy resilience** — the whole in-progress page is autosaved to a local draft and restored on load, so a reload (including after a new deploy) never clears un-run work; a version change surfaces a non-disruptive reload banner.
-- **Save model** now stores the full page snapshot (structure + median estimates + scenarios), not just the template.
+- **Save model** now stores the full page snapshot (structure + median estimates + scenarios + context docs), not just the template.
+- **Context PDFs** — analyst-uploaded PDFs are extracted to text server-side and fed into the run as an extra grounding block.
+- **Source citations** — every grounding source (web result URL, SEC filing URL, Lynch book, uploaded doc) gets an `[S#]` tag; justifications cite them and the output renders a hyperlinked Sources list. Books/uploads have no URL, so they're listed by name.
