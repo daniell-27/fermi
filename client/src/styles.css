@@ -171,13 +171,13 @@ body {
 .palette-controls { display: flex; gap: 8px; margin-top: 12px; align-items: center; }
 
 /* ---------- Formula token editor ---------- */
-.rhs-editor { align-items: center; flex-wrap: wrap; min-height: 52px; padding: 4px; border: 1px dashed transparent; border-radius: 6px; }
+.rhs-editor { display: flex; align-items: center; flex-wrap: wrap; row-gap: 8px; min-height: 52px; padding: 4px; border: 1px dashed transparent; border-radius: 6px; }
 .rhs-editor.drag-over { border-color: var(--accent); background: rgba(30, 144, 255, 0.10); }
-.tok-gap { display: inline-block; width: 8px; align-self: stretch; min-height: 30px; border-radius: 3px; }
+.tok-gap { display: inline-block; width: 8px; height: 30px; flex-shrink: 0; align-self: center; border-radius: 3px; }
 .tok-gap.gap-over { background: var(--accent); width: 14px; }
 .token-const { background: #143154; }
 .token-func { background: #2b2540; font-weight: 700; }
-.tok-typed { font-family: inherit; font-size: 13px; color: var(--ink); background: transparent; border: 1px dashed var(--line); border-radius: 5px; padding: 5px 8px; min-width: 150px; }
+.tok-typed { font-family: inherit; font-size: 13px; color: var(--ink); background: transparent; border: 1px dashed var(--line); border-radius: 5px; padding: 5px 8px; min-width: 150px; flex: 1 0 150px; max-width: 100%; }
 .tok-typed:focus { outline: none; border-color: var(--accent); background: var(--input-bg); }
 .tok-typed.bad { border-color: var(--danger); background: rgba(255, 92, 99, 0.12); }
 
@@ -240,6 +240,7 @@ body {
 .token {
   user-select: none; cursor: pointer; border-radius: 6px; padding: 6px 11px;
   font-size: 14px; box-shadow: var(--shadow); border: 1px solid var(--line); color: var(--ink);
+  white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
 }
 .token-variable { background: var(--var); border-color: rgba(30, 144, 255, 0.5); }
 .token-op { background: var(--op-bg); font-weight: 700; }
