@@ -165,11 +165,36 @@ body {
 .tok-typed:focus { outline: none; border-color: var(--accent); background: #fffdf5; }
 .tok-typed.bad { border-color: var(--twine); background: #f6e2db; }
 
-/* ---------- Median reorder ---------- */
-.median-field { display: flex; align-items: flex-start; gap: 6px; }
-.median-grip { cursor: grab; color: var(--ink-soft); padding-top: 26px; }
+/* ---------- Median estimates table ---------- */
+/* One row per variable: grip | name (left column) | input box (right column).
+   Stacked full-width rows so long names/units/pickers no longer crowd. */
+.median-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+.median-grip { cursor: grab; color: var(--ink-soft); display: flex; align-items: center; }
 .median-grip:active { cursor: grabbing; }
-.median-field.drag-over { outline: 2px dashed var(--accent); border-radius: 6px; }
+.median-field.drag-over { outline: 2px dashed var(--accent); }
+/* Turn each label into a two-column row: name on the left, input on the right. */
+.median-field .field {
+  display: grid;
+  grid-template-columns: minmax(110px, 34%) 1fr;
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 2px;
+}
+.median-field .field > span:not(.picked-metric) {
+  grid-column: 1; grid-row: 1;
+  font-size: 13px; font-weight: 500; color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.median-field .field > .input-with-unit { grid-column: 2; grid-row: 1; }
+.median-field .picked-metric { grid-column: 2; grid-row: 2; }
 
 /* ---------- Palette + formula ---------- */
 .palette { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -208,7 +233,7 @@ body {
 .hint { font-size: 12px; color: var(--ink-soft); font-style: italic; margin-top: 8px; }
 
 /* ---------- Median + scenarios ---------- */
-.median-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.median-inputs { display: flex; flex-direction: column; gap: 6px; }
 /* ---------- Scenario sources (Fintwit + article) ---------- */
 .scenario-sources { margin-bottom: 12px; }
 .sources-row { display: flex; gap: 10px; align-items: center; }
